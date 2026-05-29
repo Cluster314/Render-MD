@@ -13,5 +13,5 @@ word[]{thing to put in text}
 
 output:
 
-word^1 (number is superscripted and depends on how many footnotes were there before it, when clicked, it is highlighted and when clicked, opens a box that says: thing to put in text)
+word^1 (number is superscripted, highlighted, and depends on how many footnotes were there before it, and when clicked, opens a box that says: thing to put in text)
 ### Hope U have fun with MD!
