@@ -91,6 +91,10 @@
         }
 
         /* --- Footnote Specific Styling --- */
+        .fn-wrapper {
+            display: inline-block;
+            position: relative;
+        }
         .fn-link {
             color: #007acc;
             font-weight: bold;
@@ -102,16 +106,25 @@
         .fn-link:hover {
             text-decoration: underline;
         }
+        /* Style it as a clean inline-block tooltip box so it doesn't wrap lines ugly */
         .fn-box {
             display: none;
             background: #2d2d2d;
             color: #eee;
             border-left: 4px solid #007acc;
             padding: 8px 12px;
-            margin: 6px 0 12px 0;
+            margin: 6px 0;
             border-radius: 0 4px 4px 0;
             font-size: 0.9em;
             animation: fadeIn 0.2s ease-out;
+            
+            /* If you want it to pop out directly below the line of text: */
+            position: absolute;
+            left: 0;
+            top: 1.2em;
+            z-index: 100;
+            min-width: 200px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-5px); }
@@ -166,8 +179,8 @@
         const inlineMathReg = /^\$([^$\n]+?)\$/;
         const blockMathReg = /^\$\$([\s\S]+?)\$\$/;
         
-        // Matches: word[anything or nothing]{footnote text}
-        const footnoteReg = /^([^\s\n\[\]]+)\[([^\]]*?)\]\{([^\}]+)\}/;
+        // Matches: words or spaces[anything or nothing]{footnote text}
+        const footnoteReg = /^([^[{\n]*?)\[([^\]]*?)\]\{([^}]+)\}/;
         
         // Tracking index counter for auto-incremented footnote identifiers
         let footnoteCounter = 0;
@@ -214,7 +227,7 @@
                     name: 'footnote',
                     level: 'inline',
                     start(src) { 
-                        return src.search(/\[/); 
+                        return src.indexOf('['); 
                     },
                     tokenizer(src, tokens) {
                         const match = footnoteReg.exec(src);
@@ -233,7 +246,7 @@
                     renderer(token) {
                         // Generate a unique ID using the sequential index
                         const uniqueId = `fn-id-${token.displayIndex}-${Math.random().toString(36).substr(2, 4)}`;
-                        return `${token.text}<sup class="fn-link" data-target="${uniqueId}">${token.displayIndex}</sup><div id="${uniqueId}" class="fn-box">${token.content}</div>`;
+                        return `${token.text}<span class="fn-wrapper"><sup class="fn-link" data-target="${uniqueId}">${token.displayIndex}</sup><span id="${uniqueId}" class="fn-box">${token.content}</span></span>`;
                     }
                 }
             ],
@@ -267,6 +280,7 @@
             div.querySelectorAll('.fn-link').forEach(link => {
                 link.onclick = (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     const targetId = link.getAttribute('data-target');
                     const targetBox = div.querySelector(`#${targetId}`);
                     if (targetBox) {
@@ -274,6 +288,13 @@
                         targetBox.style.display = isVisible ? 'none' : 'block';
                     }
                 };
+            });
+            
+            // Close open footnotes if clicking anywhere else
+            document.addEventListener('click', () => {
+                div.querySelectorAll('.fn-box').forEach(box => {
+                    box.style.display = 'none';
+                });
             });
 
             // Prism Post-processing for wrappers
