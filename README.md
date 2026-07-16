@@ -9,5 +9,6 @@ In the place where u want to put your MD, put `<md>` tags, and put ur md inside.
 
 With this, you can do anything in MD, except footnotes are different.
 To make a footnote, use this syntax:
+
 `word[]{footnote}` (nothing in the square brackets)
 ### Hope U have fun with MD!
