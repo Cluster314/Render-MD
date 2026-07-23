@@ -141,7 +141,6 @@
         return LANGUAGE_NAMES[lower] || 'Unknown';
     };
 
-    // Load dependencies synchronously in order (Marked -> KaTeX -> Prism)
     const loadDependencies = () => {
         return new Promise((resolve) => {
             const loadScript = (src, callback) => {
@@ -161,15 +160,13 @@
         });
     };
 
-    // Setup Custom Marked extensions
     const configureMarkedExtensions = () => {
         const inlineMathReg = /^\$([^$\n]+?)\$/;
-        const blockMathReg = /^\$$([\s\S]+?)\$\$/;
+        const blockMathReg = /^\$\$([\s\S]+?)\$\$/;
         
         // Matches: word[anything or nothing]{footnote text}
         const footnoteReg = /^([^\s\n\[\]]+)\[([^\]]*?)\]\{([^\}]+)\}/;
         
-        // Tracking index counter for auto-incremented footnote identifiers
         let footnoteCounter = 0;
 
         marked.use({
@@ -213,9 +210,10 @@
                 {
                     name: 'footnote',
                     level: 'inline',
-                    // Precise match for word preceding []{} pattern
+                    // Safely locate ONLY footnote patterns [...]{...}
                     start(src) { 
-                        return src.search(/[^\s\n\[\]]+\[\]\{/); 
+                        const match = /(?:[^\s\n\[\]]+)?\[[^\]]*\]\{/.exec(src);
+                        return match ? match.index : -1;
                     },
                     tokenizer(src, tokens) {
                         const match = footnoteReg.exec(src);
@@ -224,7 +222,7 @@
                             return {
                                 type: 'footnote',
                                 raw: match[0],
-                                text: match[1],
+                                text: match[1] || '',
                                 displayIndex: footnoteCounter,
                                 content: match[3].trim()
                             };
@@ -260,6 +258,15 @@
             const cleanMD = lines.map(line => line.slice(minIndent)).join('\n').trim();
 
             div.innerHTML = marked.parse(cleanMD);
+
+            // Open in a new tab ONLY if title is set to "newtab"
+            div.querySelectorAll('a').forEach(a => {
+                if (a.getAttribute('title') === 'newtab') {
+                    a.setAttribute('target', '_blank');
+                    a.setAttribute('rel', 'noopener noreferrer');
+                    a.removeAttribute('title'); // Removes "newtab" hover popup text
+                }
+            });
 
             // Hook up Click Listeners for interactive Footnotes
             div.querySelectorAll('.fn-link').forEach(link => {
