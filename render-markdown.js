@@ -169,7 +169,17 @@
         
         let footnoteCounter = 0;
 
+        // Custom Link Renderer directly inside Marked
+        const renderer = new marked.Renderer();
+        renderer.link = ({ href, title, text }) => {
+            const isNewTab = title && title.trim().toLowerCase() === 'newtab';
+            const targetAttr = isNewTab ? ' target="_blank" rel="noopener noreferrer"' : '';
+            const titleAttr = (title && !isNewTab) ? ` title="${title}"` : '';
+            return `<a href="${href}"${titleAttr}${targetAttr}>${text}</a>`;
+        };
+
         marked.use({
+            renderer: renderer,
             extensions: [
                 {
                     name: 'blockMath',
@@ -210,7 +220,6 @@
                 {
                     name: 'footnote',
                     level: 'inline',
-                    // Safely locate ONLY footnote patterns [...]{...}
                     start(src) { 
                         const match = /(?:[^\s\n\[\]]+)?\[[^\]]*\]\{/.exec(src);
                         return match ? match.index : -1;
@@ -259,16 +268,17 @@
 
             div.innerHTML = marked.parse(cleanMD);
 
-            // Open in a new tab ONLY if title is set to "newtab"
+            // Double check for any raw HTML <a> tags that used title="newtab"
             div.querySelectorAll('a').forEach(a => {
-                if (a.getAttribute('title') === 'newtab') {
+                const title = a.getAttribute('title');
+                if (title && title.trim().toLowerCase() === 'newtab') {
                     a.setAttribute('target', '_blank');
                     a.setAttribute('rel', 'noopener noreferrer');
-                    a.removeAttribute('title'); // Removes "newtab" hover popup text
+                    a.removeAttribute('title');
                 }
             });
 
-            // Hook up Click Listeners for interactive Footnotes
+            // Footnote click listeners
             div.querySelectorAll('.fn-link').forEach(link => {
                 link.onclick = (e) => {
                     e.preventDefault();
@@ -281,7 +291,7 @@
                 };
             });
 
-            // Prism Post-processing for wrappers
+            // Code block wrappers
             div.querySelectorAll('pre').forEach(pre => {
                 const codeEl = pre.querySelector('code');
                 if (!codeEl) return;
