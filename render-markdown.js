@@ -164,7 +164,7 @@
     // Setup Custom Marked extensions
     const configureMarkedExtensions = () => {
         const inlineMathReg = /^\$([^$\n]+?)\$/;
-        const blockMathReg = /^\$\$([\s\S]+?)\$\$/;
+        const blockMathReg = /^\$$([\s\S]+?)\$\$/;
         
         // Matches: word[anything or nothing]{footnote text}
         const footnoteReg = /^([^\s\n\[\]]+)\[([^\]]*?)\]\{([^\}]+)\}/;
@@ -213,32 +213,29 @@
                 {
                     name: 'footnote',
                     level: 'inline',
-                    // FIXED LINE: Now returns the index of the word preceding the bracket
+                    // Precise match for word preceding []{} pattern
                     start(src) { 
-                        return src.search(/[^\s\n\[\]]+\[/); 
+                        return src.search(/[^\s\n\[\]]+\[\]\{/); 
                     },
                     tokenizer(src, tokens) {
                         const match = footnoteReg.exec(src);
                         if (match) {
-                            // Increment order count dynamically whenever a token match is found
                             footnoteCounter++;
                             return {
                                 type: 'footnote',
                                 raw: match[0],
                                 text: match[1],
-                                displayIndex: footnoteCounter, // Use the running sequence count
+                                displayIndex: footnoteCounter,
                                 content: match[3].trim()
                             };
                         }
                     },
                     renderer(token) {
-                        // Generate a unique ID using the sequential index
                         const uniqueId = `fn-id-${token.displayIndex}-${Math.random().toString(36).substr(2, 4)}`;
                         return `${token.text}<sup class="fn-link" data-target="${uniqueId}">${token.displayIndex}</sup><div id="${uniqueId}" class="fn-box">${token.content}</div>`;
                     }
                 }
             ],
-            // Hook hooks to reset counter state context on every fresh markdown input parsing process
             hooks: {
                 preprocess(markdown) {
                     footnoteCounter = 0; 
